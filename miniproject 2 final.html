@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Diary</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI,sans-serif;
+}
+
+body{
+    background:#f4f6f8;
+}
+
+.hidden{
+    display:none;
+}
+
+
+
+#loginPage{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.login-box{
+    width:350px;
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+}
+
+.login-box h2{
+    margin-bottom:15px;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+}
+
+button{
+    padding:10px 18px;
+    background:#2196F3;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#0d8bf0;
+}
+
+
+
+header{
+    background:#2196F3;
+    color:white;
+    padding:15px;
+}
+
+.container{
+    display:flex;
+    gap:20px;
+    padding:20px;
+}
+
+.calendar{
+    width:30%;
+    background:white;
+    border-radius:10px;
+    padding:15px;
+}
+
+.editor{
+    width:70%;
+    background:white;
+    border-radius:10px;
+    padding:15px;
+}
+
+.calendar-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:5px;
+    margin-top:10px;
+}
+
+.day{
+    padding:12px;
+    text-align:center;
+    background:#eef2f5;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.day:hover{
+    background:#2196F3;
+    color:white;
+}
+
+.toolbar{
+    margin:10px 0;
+}
+
+.toolbar button{
+    margin:2px;
+    padding:8px;
+}
+
+#editorArea{
+    min-height:250px;
+    border:1px solid #ccc;
+    padding:10px;
+    outline:none;
+    border-radius:5px;
+    background:white;
+}
+
+.entry-list{
+    margin-top:20px;
+}
+
+.entry-card{
+    background:#eef2f5;
+    padding:10px;
+    margin-top:10px;
+    border-radius:6px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+
+<div id="loginPage">
+    <div class="login-box">
+        <h2>🔒 Digital Diary</h2>
+
+        <input
+            type="password"
+            id="pin"
+            placeholder="Enter PIN">
+
+        <button onclick="login()">Unlock</button>
+
+        <p id="msg" style="color:red;margin-top:10px;"></p>
+    </div>
+</div>
+
+<!-- DIARY -->
+
+<div id="diaryPage" class="hidden">
+
+<header>
+    <h1>📔 My Digital Diary</h1>
+</header>
+
+<div class="container">
+
+    <div class="calendar">
+        <h3>Calendar</h3>
+        <div id="calendar" class="calendar-grid"></div>
+    </div>
+
+    <div class="editor">
+
+        <label><b>Date</b></label>
+
+        <input type="date" id="entryDate">
+
+        
+
+        <div class="toolbar">
+
+            <button onclick="format('bold')"><b>B</b></button>
+
+            <button onclick="format('italic')"><i>I</i></button>
+
+            <button onclick="format('underline')"><u>U</u></button>
+
+            <button onclick="format('insertUnorderedList')">• List</button>
+
+            <button onclick="format('justifyCenter')">Center</button>
+
+        </div>
+
+        
+
+        <div
+            id="editorArea"
+            contenteditable="true">
+        </div>
+
+        <br>
+
+        <button onclick="saveEntry()">
+            Save Entry
+        </button>
+
+        <div class="entry-list">
+            <h3>Saved Entries</h3>
+            <div id="entries"></div>
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+<script>
+
+/* PIN */
+
+const DIARY_PIN = "1234";
+
+
+
+function login(){
+
+    const enteredPin =
+        document.getElementById("pin").value;
+
+    if(enteredPin === DIARY_PIN){
+
+        document.getElementById("loginPage")
+        .classList.add("hidden");
+
+        document.getElementById("diaryPage")
+        .classList.remove("hidden");
+
+        loadEntries();
+
+    }else{
+
+        document.getElementById("msg")
+        .innerText = "Incorrect PIN";
+    }
+}
+
+
+
+function format(command){
+
+    document.execCommand(command,false,null);
+}
+
+ 
+
+function createCalendar(){
+
+    const cal =
+        document.getElementById("calendar");
+
+    for(let i=1;i<=31;i++){
+
+        const day =
+            document.createElement("div");
+
+        day.className="day";
+
+        day.innerText=i;
+
+        day.onclick=()=>{
+
+            let now=new Date();
+
+            let month=
+            String(now.getMonth()+1)
+            .padStart(2,"0");
+
+            let date=
+            String(i).padStart(2,"0");
+
+            let fullDate=
+            `${now.getFullYear()}-${month}-${date}`;
+
+            document.getElementById("entryDate")
+            .value=fullDate;
+
+            loadDateEntry(fullDate);
+        };
+
+        cal.appendChild(day);
+    }
+}
+
+
+
+function saveEntry(){
+
+    const date =
+        document.getElementById("entryDate").value;
+
+    const content =
+        document.getElementById("editorArea")
+        .innerHTML;
+
+    if(!date){
+
+        alert("Select date");
+        return;
+    }
+
+    let diary =
+        JSON.parse(
+            localStorage.getItem("diaryEntries")
+        ) || {};
+
+    diary[date] = content;
+
+    localStorage.setItem(
+        "diaryEntries",
+        JSON.stringify(diary)
+    );
+
+    alert("Entry Saved");
+
+    loadEntries();
+}
+
+
+
+function loadDateEntry(date){
+
+    let diary =
+        JSON.parse(
+            localStorage.getItem("diaryEntries")
+        ) || {};
+
+    document.getElementById("editorArea")
+    .innerHTML = diary[date] || "";
+}
+
+
+
+function loadEntries(){
+
+    let diary =
+        JSON.parse(
+            localStorage.getItem("diaryEntries")
+        ) || {};
+
+    let container =
+        document.getElementById("entries");
+
+    container.innerHTML="";
+
+    Object.keys(diary)
+    .sort()
+    .reverse()
+    .forEach(date=>{
+
+        let card =
+            document.createElement("div");
+
+        card.className="entry-card";
+
+        card.innerHTML=
+        `<b>${date}</b><br>
+        ${diary[date].substring(0,120)}...`;
+
+        container.appendChild(card);
+    });
+}
+
+/* Startup */
+
+window.onload=()=>{
+
+    createCalendar();
+
+    document.getElementById("entryDate")
+    .value =
+    new Date().toISOString().split("T")[0];
+};
+
+</script>
+
+</body>
+</html>
